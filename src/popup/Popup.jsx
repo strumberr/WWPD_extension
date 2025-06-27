@@ -68,7 +68,7 @@ export default function Popup() {
 
             const endpoint = aiExplanationEnabled ?
                 'http://127.0.0.1:8000/explain-move' :
-                'http://127.0.0.1:8000/predict-magnus-style';
+                'http://10.237.3.141:8000/predict-magnus-style';
 
             const response = await fetch(endpoint, {
                 method: 'POST',
@@ -87,18 +87,21 @@ export default function Popup() {
             const data = await response.json();
 
             if (aiExplanationEnabled) {
-                // Handle explain-move response: { "explanation": "...", "move": "e7e6" }
+                // Handle explain-move response
                 setPredictedMove({
-                    predicted_move: data.move,  // Use 'move' field from explain-move API
-                    confidence: 0.0
+                    predicted_move: data.magnus_choice,
+                    confidence: data.confidence
                 });
                 setMoveExplanation(data.explanation.replace(/"/g, ''));
-                return { predicted_move: data.move }; // Return in expected format
+                return { predicted_move: data.magnus_choice, confidence: data.confidence };
             } else {
-                // Handle predict response: { "predicted_move": "h2h3", "confidence": 0.068 }
-                setPredictedMove(data);
+                // Handle predict-magnus-style response
+                setPredictedMove({
+                    predicted_move: data.magnus_choice,
+                    confidence: data.confidence
+                });
                 setMoveExplanation('');
-                return data;
+                return { predicted_move: data.magnus_choice, confidence: data.confidence };
             }
 
         } catch (error) {
@@ -176,16 +179,16 @@ export default function Popup() {
 
                             // Highlight the destination square in red
                             setHighlightedSquares({
-                            [moveResult.from]: {
-                                backgroundColor: 'rgba(255, 100, 100, 0.6)',
-                                border: '0px dashed #ff0000',
-                            },
-                            [moveResult.to]: {
-                                backgroundColor: 'rgba(255, 0, 0, 0.8)',
-                                border: '0px solid #ff0000',
-                                boxShadow: '0 0 10px rgba(255, 0, 0, 0.5)',
-                            }
-                        });
+                                [moveResult.from]: {
+                                    backgroundColor: 'rgba(255, 100, 100, 0.6)',
+                                    border: '0px dashed #ff0000',
+                                },
+                                [moveResult.to]: {
+                                    backgroundColor: 'rgba(255, 0, 0, 0.8)',
+                                    border: '0px solid #ff0000',
+                                    boxShadow: '0 0 10px rgba(255, 0, 0, 0.5)',
+                                }
+                            });
                         }
                     } catch (error) {
                         console.error('Error highlighting move:', error);
@@ -691,17 +694,17 @@ export default function Popup() {
                         </div>
 
                         <div style={styles.boardContainer}>
-                        <Chessboard
-    position={displayFen}
-    arePiecesDraggable={false}
-    boardWidth={352}
-    customDarkSquareStyle={{ backgroundColor: '#2d4a66' }}
-    customLightSquareStyle={{ backgroundColor: '#7fb3d3' }}
-    animationDuration={200}
-    boardOrientation={boardOrientation}
-    customSquareStyles={highlightedSquares}
-    customArrows={moveArrow ? [[moveArrow.from, moveArrow.to, 'red']] : []}
-/>
+                            <Chessboard
+                                position={displayFen}
+                                arePiecesDraggable={false}
+                                boardWidth={352}
+                                customDarkSquareStyle={{ backgroundColor: '#2d4a66' }}
+                                customLightSquareStyle={{ backgroundColor: '#7fb3d3' }}
+                                animationDuration={200}
+                                boardOrientation={boardOrientation}
+                                customSquareStyles={highlightedSquares}
+                                customArrows={moveArrow ? [[moveArrow.from, moveArrow.to, 'red']] : []}
+                            />
                         </div>
 
                         {moves.length > 0 && (
@@ -743,12 +746,12 @@ export default function Popup() {
                                         ) : predictedMove ? (
                                             <>
                                                 <span>
-                                                    {aiExplanationEnabled ? 'Recommended' : 'Predicted'}:
+                                                    {aiExplanationEnabled ? 'Magnus Choice' : 'Predicted'}:
                                                     <span style={styles.predictionMove}>{predictedMove.predicted_move}</span>
                                                 </span>
-                                                {!aiExplanationEnabled && predictedMove.confidence && (
+                                                {predictedMove.confidence && (
                                                     <span style={styles.predictionConfidence}>
-                                                        {(predictedMove.confidence).toFixed(1)}%
+                                                        {predictedMove.confidence.toFixed(1)}%
                                                     </span>
                                                 )}
                                             </>
